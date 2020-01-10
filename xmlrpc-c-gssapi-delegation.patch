@@ -1,0 +1,392 @@
+From d0d5d27d65315e8b6bc4e18a4d36b1ff92875bae Mon Sep 17 00:00:00 2001
+From: "Vojtech Vitek (V-Teq)" <vvitek@redhat.com>
+Date: Wed, 10 Aug 2011 17:51:01 +0200
+Subject: [PATCH] Backport: Add gssapi_delegation Curl transport option
+
+---
+ include/xmlrpc-c/client.h                  |   65 +++++++++++++++++
+ include/xmlrpc-c/client_transport.hpp      |    7 ++
+ lib/curl_transport/curltransaction.c       |  109 +++++++++++++++++++++++++++-
+ lib/curl_transport/curltransaction.h       |   12 +++
+ lib/curl_transport/curlversion.h           |    6 ++
+ lib/curl_transport/xmlrpc_curl_transport.c |   14 ++++
+ src/cpp/curl.cpp                           |   30 ++++++++-
+ 7 files changed, 241 insertions(+), 2 deletions(-)
+
+diff --git a/include/xmlrpc-c/client.h b/include/xmlrpc-c/client.h
+index c2e2e61..d157682 100644
+--- a/include/xmlrpc-c/client.h
++++ b/include/xmlrpc-c/client.h
+@@ -50,6 +50,11 @@ enum xmlrpc_sslversion {
+     XMLRPC_SSLVERSION_SSLv3
+ };
+ 
++enum xmlrpc_httpproxytype {
++    XMLRPC_HTTPPROXY_HTTP   = 0,
++    XMLRPC_HTTPPROXY_SOCKS5 = 5
++};
++
+ struct xmlrpc_curl_xportparms {
+     /* This is designed so that zero values are always the defaults. */
+     const char * network_interface;
+@@ -71,6 +76,66 @@ struct xmlrpc_curl_xportparms {
+     const char * egdsocket;
+     const char * ssl_cipher_list;
+     unsigned int timeout;
++    
++    /*!
++     * Not backported.
++     * 
++     * DON'T ADVERTISE option is available from Xmlrpc-c 1.21.00 and thus
++     * *IS NOT AVAILABLE* in the current version of the library.
++     * The parameter below is listed because of forward compatibility
++     * with future libxmlrpc_client versions and thus must be set to
++     * FALSE/zero value, or an error will occur.
++     */
++        xmlrpc_bool dont_advertise;
++    
++    /*!
++     * Not backported.
++     * 
++     * HTTP PROXY Control is available from Xmlrpc-c 1.23.00 and thus
++     * *IS NOT AVAILABLE* in the current version of the library.
++     * The parameters below are listed because of forward compatibility
++     * with future libxmlrpc_client versions and thus must be all set
++     * to zero values, or an error will occur.
++     */
++        const char * proxy;
++        unsigned int proxy_port;
++        enum xmlrpc_httpproxytype proxy_type;
++        unsigned int proxy_auth;
++        const char * proxy_userpwd;
++    
++    /*!
++     * Backported.
++     * 
++     * GSSAPI DELEGATION is available from Xmlrpc-c 1.27.04 (August 2011)
++     * and the functionality is backported to the current version of the library.
++     *
++     * About Curl and GSSAPI credential delegation: 
++     * 
++     * Up through Curl 7.21.6, libcurl always delegates GSSAPI credentials, which
++     * means it gives the client's secrets to the server so the server can operate
++     * on the client's behalf.  In mid-2011, this was noticed to be a major
++     * security exposure, because the server is not necessarily trustworthy.
++     * One is supposed to delegate one's credentials only to a server one trusts.
++     * So in 7.21.7, Curl never delegates GSSAPI credentials.
++     * 
++     * But that causes problems for clients that _do_ trust their server, which
++     * had always relied upon Curl's delegation.
++     * 
++     * So starting in 7.21.8, Curl gives the user the choice.  The default is no
++     * delegation, but the Curl user can set the CURLOPT_GSSAPI_DELEGATION flag to
++     * order delegation.
++     * 
++     * Complicating matters is that some people made local variations of Curl
++     * during the transition phase, so the version number alone isn't
++     * determinative, so we rely on it only where we have to.
++     * 
++     * So Xmlrpc-c gives the same choice to its own user, via its
++     * 'gssapi_delegation' Curl transport option.
++     * 
++     * Current Xmlrpc-c can be linked with, and compiled with, any version of
++     * Curl, so it has to carefully consider all the possibilities.
++     */
++    xmlrpc_bool  gssapi_delegation;
+ };
+ 
+ 
+diff --git a/include/xmlrpc-c/client_transport.hpp b/include/xmlrpc-c/client_transport.hpp
+index 8d6053d..2b06c21 100644
+--- a/include/xmlrpc-c/client_transport.hpp
++++ b/include/xmlrpc-c/client_transport.hpp
+@@ -318,6 +318,11 @@ public:
+     };
+ 
+     clientXmlTransport_curl(constrOpt const& opt);
++    
++    /* GSSAPI delegation option is not member of constrOpt
++     * because of ABI backward compatibility. */
++    clientXmlTransport_curl(constrOpt const& opt,
++                            bool      const  gssapiDelegation);
+ 
+     clientXmlTransport_curl(std::string const networkInterface = "",
+                             bool        const noSslVerifyPeer = false,
+@@ -329,6 +334,8 @@ public:
+ private:
+     void
+     initialize(constrOpt const& opt);
++    void
++    initialize(constrOpt const& opt, bool const gssapiDelegation);
+ };
+ 
+ /*===========================================================================
+diff --git a/lib/curl_transport/curltransaction.c b/lib/curl_transport/curltransaction.c
+index abf243f..a74eb43 100644
+--- a/lib/curl_transport/curltransaction.c
++++ b/lib/curl_transport/curltransaction.c
+@@ -351,6 +351,99 @@ assertConstantsMatch(void) {
+ 
+ 
+ 
++/* About Curl and GSSAPI credential delegation:
++
++   Up through Curl 7.21.6, libcurl always delegates GSSAPI credentials, which
++   means it gives the client's secrets to the server so the server can operate
++   on the client's behalf.  In mid-2011, this was noticed to be a major
++   security exposure, because the server is not necessarily trustworthy.
++   One is supposed to delegate one's credentials only to a server one trusts.
++   So in 7.21.7, Curl never delegates GSSAPI credentials.
++
++   But that causes problems for clients that _do_ trust their server, which
++   had always relied upon Curl's delegation.
++
++   So starting in 7.21.8, Curl gives the user the choice.  The default is no
++   delegation, but the Curl user can set the CURLOPT_GSSAPI_DELEGATION flag to
++   order delegation.
++
++   Complicating matters is that some people made local variations of Curl
++   during the transition phase, so the version number alone isn't
++   determinative, so we rely on it only where we have to.
++
++   So Xmlrpc-c gives the same choice to its own user, via its
++   'gssapi_delegation' Curl transport option.
++   
++   Current Xmlrpc-c can be linked with, and compiled with, any version of
++   Curl, so it has to carefully consider all the possibilities.
++*/
++
++
++
++static bool
++curlAlwaysDelegatesGssapi(void) {
++/*----------------------------------------------------------------------------
++   The Curl library we're using always delegates GSSAPI credentials
++   (we don't have a choice).
++
++   This works with Curl as distributed by the Curl project, but there are
++   other versions of Curl for which it doesn't -- those versions report
++   older version numbers but in fact don't always delegate.  Some never
++   delegate, and some give the user the option.
++-----------------------------------------------------------------------------*/
++    curl_version_info_data * const curlInfoP =
++        curl_version_info(CURLVERSION_NOW);
++
++    return (curlInfoP->version_num <= 0x071506);  /* 7.21.6 */
++}
++
++
++
++static void
++requestGssapiDelegation(CURL * const curlSessionP ATTR_UNUSED,
++                        bool * const gotItP) {
++/*----------------------------------------------------------------------------
++   Set up the Curl session *curlSessionP to delegate its GSSAPI credentials to
++   the server.
++
++   Return *gotitP is true iff we succeed.  We fail when the version of libcurl
++   for which we are compiled or to which we are linked is not capable of such
++   delegation.
++-----------------------------------------------------------------------------*/
++#if HAVE_CURL_GSSAPI_DELEGATION
++    int rc;
++
++    rc = curl_easy_setopt(curlSessionP, CURLOPT_GSSAPI_DELEGATION,
++                          CURLGSSAPI_DELEGATION_FLAG);
++
++    if (rc == CURLE_OK)
++        *gotItP = true;
++    else {
++        /* The only way curl_easy_setopt() could have failed is that we
++           are running with an old libcurl from before
++           CURLOPT_GSSAPI_DELEGATION was invented.
++        */
++        if (curlAlwaysDelegatesGssapi()) {
++            /* No need to request delegation; we got it anyway */
++            *gotItP = true;
++        } else
++            *gotItP = false;
++    }
++#else
++    if (curlAlwaysDelegatesGssapi())
++        *gotItP = true;
++    else {
++        /* The library may be able to do credential delegation on request, but
++           we have no way to request it; the Curl for which we are compiled is
++           too old.
++        */
++        *gotItP = false;
++    }
++#endif
++}
++
++
++
+ static void
+ setupCurlSession(xmlrpc_env *               const envP,
+                  curlTransaction *          const curlTransactionP,
+@@ -457,13 +550,27 @@ setupCurlSession(xmlrpc_env *               const envP,
+             curl_easy_setopt(curlSessionP, CURLOPT_SSL_CIPHER_LIST,
+                              curlSetupP->sslCipherList);
+ 
++        /* Not backported */
++        assert(curlSetupP->proxy == NULL);
++
+         if (getenv("XMLRPC_TRACE_CURL"))
+             curl_easy_setopt(curlSessionP, CURLOPT_VERBOSE, 1l);
+ 
+         if (curlSetupP->timeout)
+             setCurlTimeout(curlSessionP, curlSetupP->timeout);
+ 
+-        {
++        if (curlSetupP->gssapiDelegation) {
++            bool gotIt;
++            requestGssapiDelegation(curlSessionP, &gotIt);
++
++            if (!gotIt)
++                xmlrpc_faultf(envP, "Cannot honor 'gssapi_delegation' "
++                              "Curl transport option.  "
++                              "This version of libcurl is not "
++                              "capable of delegating GSSAPI credentials");
++        }
++
++        if (!envP->fault_occurred) {
+             const char * authHdrValue;
+                 /* NULL means we don't have to construct an explicit
+                    Authorization: header.  non-null means we have to
+diff --git a/lib/curl_transport/curltransaction.h b/lib/curl_transport/curltransaction.h
+index c1ab5ce..c41d4e9 100644
+--- a/lib/curl_transport/curltransaction.h
++++ b/lib/curl_transport/curltransaction.h
+@@ -70,6 +70,18 @@ struct curlSetup {
+     const char * randomFile;
+     const char * egdSocket;
+     const char * sslCipherList;
++    
++    const char * proxy;
++    unsigned int proxyPort;
++    unsigned int proxyAuth;
++        /* e.g. CURLAUTH_BASIC, CURLAUTH_NTLM, ... */
++    const char * proxyUserPwd;
++    unsigned int proxyType;
++        /* see enum curl_proxytype: CURLPROXY_HTTP, CURLPROXY_SOCKS4, ... */
++
++    bool         gssapiDelegation;
++        /* allow GSSAPI credential delegation */
++    
+     unsigned int timeout;
+         /* 0 = no Curl timeout.  This is in milliseconds. */
+ };
+diff --git a/lib/curl_transport/curlversion.h b/lib/curl_transport/curlversion.h
+index 71c5a68..4ad445a 100644
+--- a/lib/curl_transport/curlversion.h
++++ b/lib/curl_transport/curlversion.h
+@@ -14,6 +14,12 @@
+   #define HAVE_CURL_STRERROR 0
+ #endif
+ 
++#ifdef CURLGSSAPI_DELEGATION_FLAG
++#define HAVE_CURL_GSSAPI_DELEGATION 1
++#else
++#define HAVE_CURL_GSSAPI_DELEGATION 0
++#endif
++
+ #undef CMAJOR
+ #undef CMINOR
+ 
+diff --git a/lib/curl_transport/xmlrpc_curl_transport.c b/lib/curl_transport/xmlrpc_curl_transport.c
+index 526381d..85e105b 100644
+--- a/lib/curl_transport/xmlrpc_curl_transport.c
++++ b/lib/curl_transport/xmlrpc_curl_transport.c
+@@ -765,6 +765,20 @@ getXportParms(xmlrpc_env *                          const envP,
+     else
+         curlSetupP->sslCipherList = strdup(curlXportParmsP->ssl_cipher_list);
+ 
++    /* Not backported */
++    curlSetupP->proxy = NULL;
++    curlSetupP->proxyPort = 0;
++    curlSetupP->proxyAuth = 0;
++    curlSetupP->proxyUserPwd = NULL;
++    curlSetupP->proxyType = 0;
++
++    /* Backported */
++    if (!curlXportParmsP || parmSize < XMLRPC_CXPSIZE(gssapi_delegation))
++        curlSetupP->gssapiDelegation = false;
++    else
++        curlSetupP->gssapiDelegation = !!curlXportParmsP->gssapi_delegation;
++
++
+     getTimeoutParm(envP, curlXportParmsP, parmSize, &curlSetupP->timeout);
+ }
+ 
+diff --git a/src/cpp/curl.cpp b/src/cpp/curl.cpp
+index 6181929..8e105f2 100644
+--- a/src/cpp/curl.cpp
++++ b/src/cpp/curl.cpp
+@@ -186,6 +186,11 @@ DEFINE_OPTION_SETTER(timeout, unsigned int);
+ 
+ void
+ clientXmlTransport_curl::initialize(constrOpt const& opt) {
++    clientXmlTransport_curl::initialize(opt, false);
++}
++
++void
++clientXmlTransport_curl::initialize(constrOpt const& opt, bool const gssapiDelegation) {
+     struct xmlrpc_curl_xportparms transportParms; 
+ 
+     transportParms.network_interface = opt.present.network_interface ?
+@@ -227,13 +232,24 @@ clientXmlTransport_curl::initialize(constrOpt const& opt) {
+     transportParms.timeout           = opt.present.timeout ? 
+         opt.value.timeout                   : 0;
+ 
++    /* Not backported */
++    transportParms.dont_advertise    = false;
++    transportParms.proxy             = NULL;
++    transportParms.proxy_port        = 0;
++    transportParms.proxy_auth        = 0;
++    transportParms.proxy_userpwd     = NULL;
++    transportParms.proxy_type        = XMLRPC_HTTPPROXY_HTTP;
++
++    /* Backported */
++    transportParms.gssapi_delegation = gssapiDelegation;
++    
+     this->c_transportOpsP = &xmlrpc_curl_transport_ops;
+ 
+     env_wrap env;
+ 
+     xmlrpc_curl_transport_ops.create(
+         &env.env_c, 0, "", "",
+-        &transportParms, XMLRPC_CXPSIZE(timeout),
++        &transportParms, XMLRPC_CXPSIZE(gssapi_delegation),
+         &this->c_transportP);
+ 
+     if (env.env_c.fault_occurred)
+@@ -249,6 +265,14 @@ clientXmlTransport_curl::initialize(constrOpt const& opt) {
+                 "library"));
+ }
+ 
++void
++clientXmlTransport_curl::initialize(constrOpt const& opt, bool const gssapiDelegation) {
++
++    throw(error("There is no Curl client XML transport in this XML-RPC client "
++                "library"));
++}
++
++
+ #endif
+ 
+ clientXmlTransport_curl::clientXmlTransport_curl(constrOpt const& opt) {
+@@ -256,6 +280,10 @@ clientXmlTransport_curl::clientXmlTransport_curl(constrOpt const& opt) {
+     this->initialize(opt);
+ }
+ 
++clientXmlTransport_curl::clientXmlTransport_curl(constrOpt const& opt, bool const gssapiDelegation) {
++
++    this->initialize(opt, gssapiDelegation);
++}
+ 
+ 
+ clientXmlTransport_curl::clientXmlTransport_curl(
+-- 
+1.7.6
+
