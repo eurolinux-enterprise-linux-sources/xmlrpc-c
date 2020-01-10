@@ -1,0 +1,26 @@
+From 90d97497a5984140ed6f1f91cebb1217dedec9a0 Mon Sep 17 00:00:00 2001
+From: "Vojtech Vitek (V-Teq)" <vvitek@redhat.com>
+Date: Tue, 6 Mar 2012 16:02:46 +0100
+Subject: [PATCH] Fix memory leak in libxmlrpc_client.so
+
+Originally reported at:
+https://bugzilla.redhat.com/show_bug.cgi?id=735835
+---
+ src/xmlrpc_client_global.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/src/xmlrpc_client_global.c b/src/xmlrpc_client_global.c
+index 7beba14..ee587ba 100644
+--- a/src/xmlrpc_client_global.c
++++ b/src/xmlrpc_client_global.c
+@@ -319,6 +319,7 @@ xmlrpc_client_call_asynch(const char * const serverUrl,
+                     serverUrl, methodName, responseHandler, userData,
+                     paramArrayP);
+         }
++       free(paramArrayP);
+     }
+     if (env.fault_occurred)
+         (*responseHandler)(serverUrl, methodName, NULL, userData, &env, NULL);
+-- 
+1.7.6.5
+

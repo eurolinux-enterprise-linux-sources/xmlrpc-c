@@ -1,10 +1,13 @@
 %global advanced_branch		1
 %global svnrev			1840
 
+# We need CURL_GSSAPI_DELEGATION option enabled in curl-devel/libcurl:
+%global curlGSSAPIver	7.19.7-26.el6_1.2
+
 Summary:	A lightweight RPC library based on XML and HTTP
 Name:		xmlrpc-c
 Version:	1.16.24
-Release:	1200.%svnrev%{?dist}.4
+Release:	1209.%svnrev%{?dist}
 # See COPYING for details.
 # The Python 1.5.2 license used by a few files is just BSD.
 License:	BSD and MIT
@@ -16,20 +19,19 @@ URL:		http://xmlrpc-c.sourceforge.net/
 # check which version was used for it
 %{?advanced_branch:Source0:	xmlrpc-c-%version.tar.bz2}
 Patch100:	xmlrpc-c-cmake.patch
+Patch101:	xmlrpc-c-pkgconfig.patch
 Patch102:	xmlrpc-c-printf-size_t.patch
 Patch105:	xmlrpc-c-longlong.patch
 Patch106:	xmlrpc-c-va_list.patch
 Patch107:	xmlrpc-c-uninit-curl.patch
 Patch108:	xmlrpc-c-verbose-curl.patch
 Patch109:	xmlrpc-c-gssapi-delegation.patch
-
+Patch111:	xmlrpc-c-1.16.24-xmlrpc-client-memleak.patch
 
 BuildRoot:	%_tmppath/%name-%version-%release-root
 BuildRequires:	cmake
 BuildRequires:	libxml2-devel readline-devel ncurses-devel
-# We need CURL_GSSAPI_DELEGATION option:
-BuildRequires:	curl-devel >= 7.19.7-26.el6_1.2
-
+BuildRequires:	curl-devel >= %curlGSSAPIver
 
 %package c++
 Summary:	C++ libraries for xmlrpc-c
@@ -40,7 +42,6 @@ Requires:	%name = %version-%release
 Summary:	C client libraries for xmlrpc-c
 Group:		System Environment/Libraries
 Requires:	%name = %version-%release
-Requires:	libcurl >= 7.19.7-26.el6_1.2
 
 %package client++
 Summary:	C++ client libraries for xmlrpc-c
@@ -48,7 +49,7 @@ Group:		System Environment/Libraries
 Requires:	%name = %version-%release
 Requires:	%name-c++ = %version-%release
 Requires:	%name-client = %version-%release
-Requires:	libcurl >= 7.19.7-26.el6_1.2
+Requires:	libcurl >= %curlGSSAPIver
 
 %package devel
 Summary:	Development files for xmlrpc-c based programs
@@ -67,7 +68,7 @@ Requires:	%name = %version-%release
 Requires:	%name-c++ = %version-%release
 Requires:	%name-client = %version-%release
 Requires:	%name-client++ = %version-%release
-Requires:	libcurl >= 7.19.7-26.el6_1.2
+Requires:	libcurl >= %curlGSSAPIver
 
 
 %description
@@ -119,12 +120,14 @@ This package contains some handy XML-RPC demo applications.
 %prep
 %setup -q
 %patch100 -p1
+%patch101 -p1
 %patch102 -p1
 %patch105 -p1
 %patch106 -p1
 %patch107 -p1
 %patch108 -p1
 %patch109 -p1
+%patch111 -p1 -b .xmlrpc-client-memleak
 
 ## not needed...
 rm doc/{INSTALL,configure_doc}
@@ -228,16 +231,19 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
-* Thu Aug 11 2011 Vojtech Vitek (V-Teq) <vvitek@redhat.com> - 1.16.24-1200.1840.el6_1.4
+* Wed Mar 07 2012 Vojtech Vitek (V-Teq) <vvitek@redhat.com> - 1.16.24-1209.1840
 - fixed various RpmDiff warning messages about missing sub-packages requires
-
-* Thu Aug 11 2011 Vojtech Vitek (V-Teq) <vvitek@redhat.com> - 1.16.24-1200.1840.el6_1.2
 - added Requires libcurl to the client/apps packages (.so libraries needed)
 - specified BuildRequires curl-devel version for CURLOPT_GSSAPI_DELEGATION option
+- fix & increase release number (svnrev should be after N-V-R)
 
-* Thu Aug 11 2011 Vojtech Vitek (V-Teq) <vvitek@redhat.com> - 1.16.24-1200.1840.el6_1.1
+* Fri Mar 02 2012 Vojtech Vitek (V-Teq) <vvitek@redhat.com> - 1.16.24-1200.1840.3
+- Fix memory leak in libxmlrpc_client.so (#741641)
+- Remove autoconf variables from pkgconfig files that are not used (#653702)
+
+* Wed Aug 10 2011 Vojtech Vitek (V-Teq) <vvitek@redhat.com> - 1.16.24-1200.1840.2
 - backported GSSAPI delegation from upstream version 1.27.04 with strong attention
-  to libxmlrpc++ client ABI backward compatibility (#729793)
+  to libxmlrpc++ client ABI backward compatibility (#719945)
 
 * Sat Nov 21 2009 Enrico Scholz <enrico.scholz@informatik.tu-chemnitz.de> - 1.16.24-1200.1840
 - updated to 1.16.24

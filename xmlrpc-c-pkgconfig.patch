@@ -1,0 +1,764 @@
+diff -uN --recursive xmlrpc-c-1.16.6.orig/common.mk xmlrpc-c-1.16.6/common.mk
+--- xmlrpc-c-1.16.6.orig/common.mk	2008-12-02 01:46:10.000000000 -0500
++++ xmlrpc-c-1.16.6/common.mk	2009-08-10 13:28:58.000000000 -0400
+@@ -487,10 +487,10 @@
+ 
+ MKINSTALLDIRS = $(SHELL) $(SRCDIR)/mkinstalldirs
+ 
+-.PHONY: install-common install-headers install-bin
++.PHONY: install-common install-headers install-bin install-pc
+ install-common: \
+   install-static-libraries install-shared-libraries \
+-  install-headers install-bin
++  install-headers install-bin install-pc
+ 
+ INSTALL_LIB_CMD = $(INSTALL_DATA) $$p $(DESTDIR)$(LIBINST_DIR)/$$p
+ RANLIB_CMD = $(RANLIB) $(DESTDIR)$(LIBINST_DIR)/$$p
+@@ -536,6 +536,16 @@
+ $(DESTDIR)$(PROGRAMINST_DIR):
+ 	$(MKINSTALLDIRS) $@
+ 
++INSTALL_PKGCONFIG_CMD = $(INSTALL_PROGRAM) $$p $(DESTDIR)$(PKGCONFIGINST_DIR)/$$p
++
++install-pc: $(PKGCONFIG_TO_INSTALL)
++	$(MKINSTALLDIRS) $(DESTDIR)$(PKGCONFIGINST_DIR)
++	@list='$(PKGCONFIG_TO_INSTALL)'; \
++         for p in $$list; do \
++	   echo "$(INSTALL_PKGCONFIG_CMD)"; \
++	   $(INSTALL_PKGCONFIG_CMD); \
++	   done
++
+ 
+ ##############################################################################
+ #                           MISCELLANEOUS RULES                              #
+diff -uN --recursive xmlrpc-c-1.16.6.orig/config.mk.in xmlrpc-c-1.16.6/config.mk.in
+--- xmlrpc-c-1.16.6.orig/config.mk.in	2008-06-28 15:37:40.000000000 -0400
++++ xmlrpc-c-1.16.6/config.mk.in	2009-08-11 09:49:32.000000000 -0400
+@@ -316,9 +316,10 @@
+ # PREFIX is designed to be overridden at make time if the user decides
+ # he doesn't like the default specified at 'configure' time.
+ 
+-LIBINST_DIR = $(PREFIX)/lib
+-HEADERINST_DIR = $(PREFIX)/include
+-PROGRAMINST_DIR = $(PREFIX)/bin
++LIBINST_DIR = @libdir@
++HEADERINST_DIR = @includedir@
++PROGRAMINST_DIR = @bindir@
++PKGCONFIGINST_DIR = $(LIBINST_DIR)/pkgconfig
+ 
+ # DESTDIR is designed to be overridden at make time in order to relocate
+ # the entire install into a subdirectory.
+diff -uN --recursive xmlrpc-c-1.16.6.orig/configure xmlrpc-c-1.16.6/configure
+--- xmlrpc-c-1.16.6.orig/configure	2008-06-28 15:37:40.000000000 -0400
++++ xmlrpc-c-1.16.6/configure	2009-08-10 13:19:48.000000000 -0400
+@@ -6429,6 +6429,9 @@
+ 
+ 
+ 
++                                                                                                                                                                ac_config_files="$ac_config_files lib/abyss/src/xmlrpc_abyss.pc lib/expat/xmlparse/xmlrpc_xmlparse.pc lib/expat/xmltok/xmlrpc_xmltok.pc lib/libutil/xmlrpc_util.pc src/cpp/xmlrpc++.pc src/cpp/xmlrpc_client++.pc src/cpp/xmlrpc_cpp.pc src/cpp/xmlrpc_packetsocket.pc src/cpp/xmlrpc_server++.pc src/cpp/xmlrpc_server_abyss++.pc src/cpp/xmlrpc_server_cgi++.pc src/cpp/xmlrpc_server_pstream++.pc src/xmlrpc.pc src/xmlrpc_client.pc src/xmlrpc_server.pc src/xmlrpc_server_abyss.pc src/xmlrpc_server_cgi.pc"
++
++
+                               ac_config_files="$ac_config_files srcdir.mk config.mk xmlrpc_config.h"
+ cat >confcache <<\_ACEOF
+ # This file is a shell script that caches the results of configure
+@@ -6965,6 +6968,23 @@
+ do
+   case "$ac_config_target" in
+   # Handling of arguments.
++  "lib/abyss/src/xmlrpc_abyss.pc" ) CONFIG_FILES="$CONFIG_FILES lib/abyss/src/xmlrpc_abyss.pc" ;;
++  "lib/expat/xmlparse/xmlrpc_xmlparse.pc" ) CONFIG_FILES="$CONFIG_FILES lib/expat/xmlparse/xmlrpc_xmlparse.pc" ;;
++  "lib/expat/xmltok/xmlrpc_xmltok.pc" ) CONFIG_FILES="$CONFIG_FILES lib/expat/xmltok/xmlrpc_xmltok.pc" ;;
++  "lib/libutil/xmlrpc_util.pc" ) CONFIG_FILES="$CONFIG_FILES lib/libutil/xmlrpc_util.pc" ;;
++  "src/cpp/xmlrpc++.pc" ) CONFIG_FILES="$CONFIG_FILES src/cpp/xmlrpc++.pc" ;;
++  "src/cpp/xmlrpc_client++.pc" ) CONFIG_FILES="$CONFIG_FILES src/cpp/xmlrpc_client++.pc" ;;
++  "src/cpp/xmlrpc_cpp.pc" ) CONFIG_FILES="$CONFIG_FILES src/cpp/xmlrpc_cpp.pc" ;;
++  "src/cpp/xmlrpc_packetsocket.pc" ) CONFIG_FILES="$CONFIG_FILES src/cpp/xmlrpc_packetsocket.pc" ;;
++  "src/cpp/xmlrpc_server++.pc" ) CONFIG_FILES="$CONFIG_FILES src/cpp/xmlrpc_server++.pc" ;;
++  "src/cpp/xmlrpc_server_abyss++.pc" ) CONFIG_FILES="$CONFIG_FILES src/cpp/xmlrpc_server_abyss++.pc" ;;
++  "src/cpp/xmlrpc_server_cgi++.pc" ) CONFIG_FILES="$CONFIG_FILES src/cpp/xmlrpc_server_cgi++.pc" ;;
++  "src/cpp/xmlrpc_server_pstream++.pc" ) CONFIG_FILES="$CONFIG_FILES src/cpp/xmlrpc_server_pstream++.pc" ;;
++  "src/xmlrpc.pc" ) CONFIG_FILES="$CONFIG_FILES src/xmlrpc.pc" ;;
++  "src/xmlrpc_client.pc" ) CONFIG_FILES="$CONFIG_FILES src/xmlrpc_client.pc" ;;
++  "src/xmlrpc_server.pc" ) CONFIG_FILES="$CONFIG_FILES src/xmlrpc_server.pc" ;;
++  "src/xmlrpc_server_abyss.pc" ) CONFIG_FILES="$CONFIG_FILES src/xmlrpc_server_abyss.pc" ;;
++  "src/xmlrpc_server_cgi.pc" ) CONFIG_FILES="$CONFIG_FILES src/xmlrpc_server_cgi.pc" ;;
+   "srcdir.mk" ) CONFIG_FILES="$CONFIG_FILES srcdir.mk" ;;
+   "config.mk" ) CONFIG_FILES="$CONFIG_FILES config.mk" ;;
+   "xmlrpc_config.h" ) CONFIG_FILES="$CONFIG_FILES xmlrpc_config.h" ;;
+diff -uN --recursive xmlrpc-c-1.16.6.orig/configure.in xmlrpc-c-1.16.6/configure.in
+--- xmlrpc-c-1.16.6.orig/configure.in	2008-06-28 15:37:40.000000000 -0400
++++ xmlrpc-c-1.16.6/configure.in	2009-08-10 12:02:04.000000000 -0400
+@@ -633,6 +633,26 @@
+ dnl Note that AM_CONFIG_HEADER at the top of this file outputs another
+ dnl result: xmlrpc_amconfig.h .
+ 
++AC_CONFIG_FILES([
++          lib/abyss/src/xmlrpc_abyss.pc
++          lib/expat/xmlparse/xmlrpc_xmlparse.pc
++          lib/expat/xmltok/xmlrpc_xmltok.pc
++          lib/libutil/xmlrpc_util.pc
++          src/cpp/xmlrpc++.pc
++          src/cpp/xmlrpc_client++.pc
++          src/cpp/xmlrpc_cpp.pc
++          src/cpp/xmlrpc_packetsocket.pc
++          src/cpp/xmlrpc_server++.pc
++          src/cpp/xmlrpc_server_abyss++.pc
++          src/cpp/xmlrpc_server_cgi++.pc
++          src/cpp/xmlrpc_server_pstream++.pc
++          src/xmlrpc.pc
++          src/xmlrpc_client.pc
++          src/xmlrpc_server.pc
++          src/xmlrpc_server_abyss.pc
++          src/xmlrpc_server_cgi.pc
++])
++
+ AC_OUTPUT( \
+           srcdir.mk \
+           config.mk \
+diff -uN --recursive xmlrpc-c-1.16.6.orig/include/xmlrpc-c/config.h xmlrpc-c-1.16.6/include/xmlrpc-c/config.h
+--- xmlrpc-c-1.16.6.orig/include/xmlrpc-c/config.h	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/include/xmlrpc-c/config.h	2009-08-10 11:49:22.000000000 -0400
+@@ -0,0 +1,37 @@
++#ifndef XMLRPC_C_CONFIG_H_INCLUDED
++#define XMLRPC_C_CONFIG_H_INCLUDED
++
++/* This file, part of XML-RPC For C/C++, is meant to 
++   define characteristics of this particular installation 
++   that the other <xmlrpc-c/...> header files need in 
++   order to compile correctly when #included in Xmlrpc-c
++   user code.
++
++   Those header files #include this one.
++
++   This file was created by a make rule.
++*/
++#define XMLRPC_HAVE_WCHAR 1
++#ifdef WIN32
++  /* SOCKET is a type defined by <winsock.h>.  Anyone who
++     uses XMLRPC_SOCKET on a WIN32 system must #include
++     <winsock.h>
++  */
++  #define XMLRPC_SOCKET SOCKET
++  #define XMLRPC_HAVE_TIMEVAL 0
++  #define XMLRPC_HAVE_TIMESPEC 0
++#else
++  #define XMLRPC_SOCKET int
++  #define XMLRPC_HAVE_TIMEVAL 1
++  #define XMLRPC_HAVE_TIMESPEC 1
++#endif
++
++#if defined(_MSC_VER)
++  /* Newer MSVC has long long, but MSVC 6 does not */
++  #define XMLRPC_INT64 __int64
++  #define XMLRPC_INT32 __int32
++#else
++  #define XMLRPC_INT64 long long
++  #define XMLRPC_INT32 int
++#endif
++#endif
+diff -uN --recursive xmlrpc-c-1.16.6.orig/lib/abyss/src/Makefile xmlrpc-c-1.16.6/lib/abyss/src/Makefile
+--- xmlrpc-c-1.16.6.orig/lib/abyss/src/Makefile	2008-09-27 13:56:00.000000000 -0400
++++ xmlrpc-c-1.16.6/lib/abyss/src/Makefile	2009-08-10 13:42:03.000000000 -0400
+@@ -18,6 +18,8 @@
+ SHARED_LIBS_TO_BUILD := libxmlrpc_abyss
+ SHARED_LIBS_TO_INSTALL := libxmlrpc_abyss
+ 
++PKGCONFIG_TO_INSTALL := xmlrpc_abyss.pc
++
+ ifeq ($(ENABLE_ABYSS_THREADS),yes)
+   THREAD_MODULE = thread_pthread
+ else
+diff -uN --recursive xmlrpc-c-1.16.6.orig/lib/abyss/src/xmlrpc_abyss.pc xmlrpc-c-1.16.6/lib/abyss/src/xmlrpc_abyss.pc
+--- xmlrpc-c-1.16.6.orig/lib/abyss/src/xmlrpc_abyss.pc	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/lib/abyss/src/xmlrpc_abyss.pc	2009-08-10 13:19:55.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=${exec_prefix}/bin
++prefix=/usr
++libdir=${exec_prefix}/lib
++includedir=${prefix}/include
++
++Name:        xmlrpc_abyss
++Description: XMLRPC Abyss base library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc_util
++Libs:                  -L${libdir} -lxmlrpc_abyss
++Cflags:
+diff -uN --recursive xmlrpc-c-1.16.6.orig/lib/abyss/src/xmlrpc_abyss.pc.in xmlrpc-c-1.16.6/lib/abyss/src/xmlrpc_abyss.pc.in
+--- xmlrpc-c-1.16.6.orig/lib/abyss/src/xmlrpc_abyss.pc.in	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/lib/abyss/src/xmlrpc_abyss.pc.in	2009-08-10 11:44:22.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=@bindir@
++prefix=@prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name:        xmlrpc_abyss
++Description: XMLRPC Abyss base library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc_util
++Libs:                  -L${libdir} -lxmlrpc_abyss
++Cflags:
+diff -uN --recursive xmlrpc-c-1.16.6.orig/lib/expat/xmlparse/Makefile xmlrpc-c-1.16.6/lib/expat/xmlparse/Makefile
+--- xmlrpc-c-1.16.6.orig/lib/expat/xmlparse/Makefile	2008-09-27 13:56:00.000000000 -0400
++++ xmlrpc-c-1.16.6/lib/expat/xmlparse/Makefile	2009-08-10 13:42:38.000000000 -0400
+@@ -31,6 +31,8 @@
+ SHARED_LIBS_TO_BUILD := libxmlrpc_xmlparse
+ SHARED_LIBS_TO_INSTALL := libxmlrpc_xmlparse
+ 
++PKGCONFIG_TO_INSTALL := xmlrpc_xmlparse.pc
++
+ TARGET_MODS = xmlparse
+ 
+ OMIT_XMLPARSE_LIB_RULE=Y
+diff -uN --recursive xmlrpc-c-1.16.6.orig/lib/expat/xmlparse/xmlrpc_xmlparse.pc xmlrpc-c-1.16.6/lib/expat/xmlparse/xmlrpc_xmlparse.pc
+--- xmlrpc-c-1.16.6.orig/lib/expat/xmlparse/xmlrpc_xmlparse.pc	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/lib/expat/xmlparse/xmlrpc_xmlparse.pc	2009-08-10 13:19:55.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=${exec_prefix}/bin
++prefix=/usr
++libdir=${exec_prefix}/lib
++includedir=${prefix}/include
++
++Name:        xmlrpc_xmlparse
++Description: XMLRPC xmlparse library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc_xmltok
++Libs:                  -L${libdir} -lxmlrpc_xmlparse
++Cflags:
+diff -uN --recursive xmlrpc-c-1.16.6.orig/lib/expat/xmlparse/xmlrpc_xmlparse.pc.in xmlrpc-c-1.16.6/lib/expat/xmlparse/xmlrpc_xmlparse.pc.in
+--- xmlrpc-c-1.16.6.orig/lib/expat/xmlparse/xmlrpc_xmlparse.pc.in	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/lib/expat/xmlparse/xmlrpc_xmlparse.pc.in	2009-08-10 11:53:29.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=@bindir@
++prefix=@prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name:        xmlrpc_xmlparse
++Description: XMLRPC xmlparse library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc_xmltok
++Libs:                  -L${libdir} -lxmlrpc_xmlparse
++Cflags:
+diff -uN --recursive xmlrpc-c-1.16.6.orig/lib/expat/xmltok/Makefile xmlrpc-c-1.16.6/lib/expat/xmltok/Makefile
+--- xmlrpc-c-1.16.6.orig/lib/expat/xmltok/Makefile	2008-09-27 13:56:00.000000000 -0400
++++ xmlrpc-c-1.16.6/lib/expat/xmltok/Makefile	2009-08-10 13:42:19.000000000 -0400
+@@ -38,6 +38,8 @@
+ SHARED_LIBS_TO_BUILD := libxmlrpc_xmltok
+ SHARED_LIBS_TO_INSTALL := libxmlrpc_xmltok
+ 
++PKGCONFIG_TO_INSTALL := xmlrpc_xmltok.pc
++
+ TARGET_MODS = xmltok xmlrole
+ 
+ OMIT_XMLTOK_LIB_RULE = Y
+diff -uN --recursive xmlrpc-c-1.16.6.orig/lib/expat/xmltok/xmlrpc_xmltok.pc xmlrpc-c-1.16.6/lib/expat/xmltok/xmlrpc_xmltok.pc
+--- xmlrpc-c-1.16.6.orig/lib/expat/xmltok/xmlrpc_xmltok.pc	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/lib/expat/xmltok/xmlrpc_xmltok.pc	2009-08-10 13:19:55.000000000 -0400
+@@ -0,0 +1,9 @@
++prefix=/usr
++libdir=${exec_prefix}/lib
++
++Name:        xmlrpc_xmltok
++Description: XMLRPC xmltok library
++Version:     @XMLRPC_C_VERSION@
++
++Libs:          -L${libdir}
++Cflags:
+diff -uN --recursive xmlrpc-c-1.16.6.orig/lib/expat/xmltok/xmlrpc_xmltok.pc.in xmlrpc-c-1.16.6/lib/expat/xmltok/xmlrpc_xmltok.pc.in
+--- xmlrpc-c-1.16.6.orig/lib/expat/xmltok/xmlrpc_xmltok.pc.in	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/lib/expat/xmltok/xmlrpc_xmltok.pc.in	2009-08-10 11:54:19.000000000 -0400
+@@ -0,0 +1,9 @@
++prefix=@prefix@
++libdir=@libdir@
++
++Name:        xmlrpc_xmltok
++Description: XMLRPC xmltok library
++Version:     @XMLRPC_C_VERSION@
++
++Libs:          -L${libdir}
++Cflags:
+diff -uN --recursive xmlrpc-c-1.16.6.orig/lib/libutil/Makefile xmlrpc-c-1.16.6/lib/libutil/Makefile
+--- xmlrpc-c-1.16.6.orig/lib/libutil/Makefile	2008-09-27 13:56:00.000000000 -0400
++++ xmlrpc-c-1.16.6/lib/libutil/Makefile	2009-08-10 13:42:57.000000000 -0400
+@@ -27,6 +27,8 @@
+ SHARED_LIBS_TO_BUILD := libxmlrpc_util
+ SHARED_LIBS_TO_INSTALL := libxmlrpc_util
+ 
++PKGCONFIG_TO_INSTALL := xmlrpc_util.pc
++
+ TARGET_MODS = \
+   asprintf \
+   error \
+diff -uN --recursive xmlrpc-c-1.16.6.orig/lib/libutil/xmlrpc_util.pc xmlrpc-c-1.16.6/lib/libutil/xmlrpc_util.pc
+--- xmlrpc-c-1.16.6.orig/lib/libutil/xmlrpc_util.pc	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/lib/libutil/xmlrpc_util.pc	2009-08-10 13:19:55.000000000 -0400
+@@ -0,0 +1,10 @@
++prefix=/usr
++libdir=${exec_prefix}/lib
++includedir=${prefix}/include
++
++Name:        xmlrpc_util
++Description: XMLRPC utility library
++Version:     @XMLRPC_C_VERSION@
++
++Libs:          -L${libdir} -lxmlrpc_util
++Cflags:                -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/lib/libutil/xmlrpc_util.pc.in xmlrpc-c-1.16.6/lib/libutil/xmlrpc_util.pc.in
+--- xmlrpc-c-1.16.6.orig/lib/libutil/xmlrpc_util.pc.in	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/lib/libutil/xmlrpc_util.pc.in	2009-08-10 11:54:52.000000000 -0400
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name:        xmlrpc_util
++Description: XMLRPC utility library
++Version:     @XMLRPC_C_VERSION@
++
++Libs:          -L${libdir} -lxmlrpc_util
++Cflags:                -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/cpp/Makefile xmlrpc-c-1.16.6/src/cpp/Makefile
+--- xmlrpc-c-1.16.6.orig/src/cpp/Makefile	2008-12-02 01:46:10.000000000 -0500
++++ xmlrpc-c-1.16.6/src/cpp/Makefile	2009-08-10 13:40:26.000000000 -0400
+@@ -34,6 +34,8 @@
+ SHARED_LIBS_TO_BUILD = $(TARGET_LIB_NAMES_PP)
+ SHARED_LIBS_TO_INSTALL = $(TARGET_LIB_NAMES_PP)
+ 
++PKGCONFIG_TO_INSTALL = xmlrpc_cpp.pc xmlrpc_server_cgi++.pc xmlrpc_server_abyss++.pc xmlrpc++.pc xmlrpc_server_pstream++.pc xmlrpc_packetsocket.pc xmlrpc_server++.pc xmlrpc_client++.pc
++
+ # INCLUDES and DEP_SOURCES are used by dep-common target
+ INCLUDES = $(BASIC_INCLUDES) $(CLIENT_INCLUDES) $(LIBXML_INCLUDES) \
+   $(SERVER_INCLUDES) $(SERVER_ABYSS_INCLUDES) $(TRANSPORT_INCLUDES)
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_client++.pc xmlrpc-c-1.16.6/src/cpp/xmlrpc_client++.pc
+--- xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_client++.pc	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/cpp/xmlrpc_client++.pc	2009-08-10 13:19:55.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=${exec_prefix}/bin
++prefix=/usr
++libdir=${exec_prefix}/lib
++includedir=${prefix}/include
++
++Name:        xmlrpc_client++
++Description: XMLRPC C++ Client library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc++ xmlrpc_client xmlrpc_packetsocket xmlrpc xmlrpc_util
++Libs:                  -L${libdir} -lxmlrpc_client++
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_client++.pc.in xmlrpc-c-1.16.6/src/cpp/xmlrpc_client++.pc.in
+--- xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_client++.pc.in	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/cpp/xmlrpc_client++.pc.in	2009-08-10 11:55:58.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=@bindir@
++prefix=@prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name:        xmlrpc_client++
++Description: XMLRPC C++ Client library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc++ xmlrpc_client xmlrpc_packetsocket xmlrpc xmlrpc_util
++Libs:                  -L${libdir} -lxmlrpc_client++
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_cpp.pc xmlrpc-c-1.16.6/src/cpp/xmlrpc_cpp.pc
+--- xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_cpp.pc	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/cpp/xmlrpc_cpp.pc	2009-08-10 13:19:55.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=${exec_prefix}/bin
++prefix=/usr
++libdir=${exec_prefix}/lib
++includedir=${prefix}/include
++
++Name:        xmlrpc_cpp
++Description: XMLRPC CPP library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc xmlrpc_server xmlrpc_util
++Libs:                  -L${libdir} -lxmlrpc_cpp
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_cpp.pc.in xmlrpc-c-1.16.6/src/cpp/xmlrpc_cpp.pc.in
+--- xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_cpp.pc.in	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/cpp/xmlrpc_cpp.pc.in	2009-08-10 11:56:30.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=@bindir@
++prefix=@prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name:        xmlrpc_cpp
++Description: XMLRPC CPP library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc xmlrpc_server xmlrpc_util
++Libs:                  -L${libdir} -lxmlrpc_cpp
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_packetsocket.pc xmlrpc-c-1.16.6/src/cpp/xmlrpc_packetsocket.pc
+--- xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_packetsocket.pc	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/cpp/xmlrpc_packetsocket.pc	2009-08-10 13:19:55.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=${exec_prefix}/bin
++prefix=/usr
++libdir=${exec_prefix}/lib
++includedir=${prefix}/include
++
++Name:        xmlrpc_packetsocket
++Description: XMLRPC C++ packsetsocket library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc++
++Libs:                  -L${libdir} -lxmlrpc_packetsocket
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_packetsocket.pc.in xmlrpc-c-1.16.6/src/cpp/xmlrpc_packetsocket.pc.in
+--- xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_packetsocket.pc.in	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/cpp/xmlrpc_packetsocket.pc.in	2009-08-10 11:57:13.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=@bindir@
++prefix=@prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name:        xmlrpc_packetsocket
++Description: XMLRPC C++ packsetsocket library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc++
++Libs:                  -L${libdir} -lxmlrpc_packetsocket
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_server++.pc xmlrpc-c-1.16.6/src/cpp/xmlrpc_server++.pc
+--- xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_server++.pc	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/cpp/xmlrpc_server++.pc	2009-08-10 13:19:55.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=${exec_prefix}/bin
++prefix=/usr
++libdir=${exec_prefix}/lib
++includedir=${prefix}/include
++
++Name:        xmlrpc_server++
++Description: XMLRPC C++ Server library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc++ xmlrpc_server xmlrpc xmlrpc_util
++Libs:                  -L${libdir} -lxmlrpc_server++
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_server++.pc.in xmlrpc-c-1.16.6/src/cpp/xmlrpc_server++.pc.in
+--- xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_server++.pc.in	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/cpp/xmlrpc_server++.pc.in	2009-08-10 13:19:55.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=@bindir@
++prefix=@prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name:        xmlrpc_server++
++Description: XMLRPC C++ Server library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc++ xmlrpc_server xmlrpc xmlrpc_util
++Libs:                  -L${libdir} -lxmlrpc_server++
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc++.pc xmlrpc-c-1.16.6/src/cpp/xmlrpc++.pc
+--- xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc++.pc	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/cpp/xmlrpc++.pc	2009-08-10 13:19:55.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=${exec_prefix}/bin
++prefix=/usr
++libdir=${exec_prefix}/lib
++includedir=${prefix}/include
++
++Name:        xmlrpc++
++Description: XMLRPC C++ Base library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc xmlrpc_util
++Libs:                  -L${libdir} -lxmlrpc++
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc++.pc.in xmlrpc-c-1.16.6/src/cpp/xmlrpc++.pc.in
+--- xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc++.pc.in	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/cpp/xmlrpc++.pc.in	2009-08-10 11:55:21.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=@bindir@
++prefix=@prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name:        xmlrpc++
++Description: XMLRPC C++ Base library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc xmlrpc_util
++Libs:                  -L${libdir} -lxmlrpc++
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_server_abyss++.pc xmlrpc-c-1.16.6/src/cpp/xmlrpc_server_abyss++.pc
+--- xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_server_abyss++.pc	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/cpp/xmlrpc_server_abyss++.pc	2009-08-10 13:19:55.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=${exec_prefix}/bin
++prefix=/usr
++libdir=${exec_prefix}/lib
++includedir=${prefix}/include
++
++Name:        xmlrpc_server_abyss++
++Description: XMLRPC C++ Abyss-Server library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc_server++ xmlrpc_server_abyss xmlrpc++ xmlrpc_abyss xmlrpc_util
++Libs:                  -L${libdir} -lxmlrpc_server_abyss++
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_server_abyss++.pc.in xmlrpc-c-1.16.6/src/cpp/xmlrpc_server_abyss++.pc.in
+--- xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_server_abyss++.pc.in	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/cpp/xmlrpc_server_abyss++.pc.in	2009-08-10 11:57:52.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=@bindir@
++prefix=@prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name:        xmlrpc_server_abyss++
++Description: XMLRPC C++ Abyss-Server library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc_server++ xmlrpc_server_abyss xmlrpc++ xmlrpc_abyss xmlrpc_util
++Libs:                  -L${libdir} -lxmlrpc_server_abyss++
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_server_cgi++.pc xmlrpc-c-1.16.6/src/cpp/xmlrpc_server_cgi++.pc
+--- xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_server_cgi++.pc	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/cpp/xmlrpc_server_cgi++.pc	2009-08-10 13:19:55.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=${exec_prefix}/bin
++prefix=/usr
++libdir=${exec_prefix}/lib
++includedir=${prefix}/include
++
++Name:        xmlrpc_server_cgi++
++Description: XMLRPC C++ CGI-Server library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc_server++ xmlrpc++ xmlrpc
++Libs:                  -L${libdir} -lxmlrpc_server_cgi++
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_server_cgi++.pc.in xmlrpc-c-1.16.6/src/cpp/xmlrpc_server_cgi++.pc.in
+--- xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_server_cgi++.pc.in	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/cpp/xmlrpc_server_cgi++.pc.in	2009-08-10 11:58:32.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=@bindir@
++prefix=@prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name:        xmlrpc_server_cgi++
++Description: XMLRPC C++ CGI-Server library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc_server++ xmlrpc++ xmlrpc
++Libs:                  -L${libdir} -lxmlrpc_server_cgi++
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_server_pstream++.pc xmlrpc-c-1.16.6/src/cpp/xmlrpc_server_pstream++.pc
+--- xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_server_pstream++.pc	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/cpp/xmlrpc_server_pstream++.pc	2009-08-10 13:19:55.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=${exec_prefix}/bin
++prefix=/usr
++libdir=${exec_prefix}/lib
++includedir=${prefix}/include
++
++Name:        xmlrpc_server_pstream++
++Description: XMLRPC C++ pstream-Server library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc_server++ xmlrpc_packetsocket xmlrpc++
++Libs:                  -L${libdir} -lxmlrpc_server_pstream++
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_server_pstream++.pc.in xmlrpc-c-1.16.6/src/cpp/xmlrpc_server_pstream++.pc.in
+--- xmlrpc-c-1.16.6.orig/src/cpp/xmlrpc_server_pstream++.pc.in	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/cpp/xmlrpc_server_pstream++.pc.in	2009-08-10 11:59:10.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=@bindir@
++prefix=@prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name:        xmlrpc_server_pstream++
++Description: XMLRPC C++ pstream-Server library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc_server++ xmlrpc_packetsocket xmlrpc++
++Libs:                  -L${libdir} -lxmlrpc_server_pstream++
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/Makefile xmlrpc-c-1.16.6/src/Makefile
+--- xmlrpc-c-1.16.6.orig/src/Makefile	2008-09-27 13:56:00.000000000 -0400
++++ xmlrpc-c-1.16.6/src/Makefile	2009-08-10 13:41:46.000000000 -0400
+@@ -38,6 +38,8 @@
+ SHARED_LIBS_TO_BUILD := $(TARGET_LIBRARY_NAMES)
+ SHARED_LIBS_TO_INSTALL := $(TARGET_LIBRARY_NAMES)
+ 
++PKGCONFIG_TO_INSTALL = xmlrpc_client.pc xmlrpc_server.pc xmlrpc_server_cgi.pc xmlrpc_server_abyss.pc xmlrpc.pc
++
+ # TRANSPORT_MODS is the list of modules that have to go into the client
+ # library to provide the client XML transport functions.
+ 
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/xmlrpc_client.pc xmlrpc-c-1.16.6/src/xmlrpc_client.pc
+--- xmlrpc-c-1.16.6.orig/src/xmlrpc_client.pc	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/xmlrpc_client.pc	2009-08-10 13:19:55.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=${exec_prefix}/bin
++prefix=/usr
++libdir=${exec_prefix}/lib
++includedir=${prefix}/include
++
++Name:        xmlrpc_client
++Description: XMLRPC client library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc @xmlrpc_client_pkgconfig_req@ xmlrpc_util
++Libs:                  -L${libdir} -lxmlrpc_client
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/xmlrpc_client.pc.in xmlrpc-c-1.16.6/src/xmlrpc_client.pc.in
+--- xmlrpc-c-1.16.6.orig/src/xmlrpc_client.pc.in	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/xmlrpc_client.pc.in	2009-08-10 12:00:30.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=@bindir@
++prefix=@prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name:        xmlrpc_client
++Description: XMLRPC client library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc @xmlrpc_client_pkgconfig_req@ xmlrpc_util
++Libs:                  -L${libdir} -lxmlrpc_client
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/xmlrpc.pc xmlrpc-c-1.16.6/src/xmlrpc.pc
+--- xmlrpc-c-1.16.6.orig/src/xmlrpc.pc	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/xmlrpc.pc	2009-08-10 13:19:55.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=${exec_prefix}/bin
++prefix=/usr
++libdir=${exec_prefix}/lib
++includedir=${prefix}/include
++
++Name:        xmlrpc
++Description: XMLRPC base library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      @xmlrpc_pkgconfig_req@ xmlrpc_util
++Libs:                  -L${libdir} -lxmlrpc
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/xmlrpc.pc.in xmlrpc-c-1.16.6/src/xmlrpc.pc.in
+--- xmlrpc-c-1.16.6.orig/src/xmlrpc.pc.in	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/xmlrpc.pc.in	2009-08-10 11:59:42.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=@bindir@
++prefix=@prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name:        xmlrpc
++Description: XMLRPC base library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      @xmlrpc_pkgconfig_req@ xmlrpc_util
++Libs:                  -L${libdir} -lxmlrpc
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/xmlrpc_server_abyss.pc xmlrpc-c-1.16.6/src/xmlrpc_server_abyss.pc
+--- xmlrpc-c-1.16.6.orig/src/xmlrpc_server_abyss.pc	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/xmlrpc_server_abyss.pc	2009-08-10 13:19:55.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=${exec_prefix}/bin
++prefix=/usr
++libdir=${exec_prefix}/lib
++includedir=${prefix}/include
++
++Name:        xmlrpc_server_abyss
++Description: XMLRPC Server Abyss library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc_server xmlrpc_abyss xmlrpc xmlrpc_util
++Libs:                  -L${libdir} -lxmlrpc_server_abyss
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/xmlrpc_server_abyss.pc.in xmlrpc-c-1.16.6/src/xmlrpc_server_abyss.pc.in
+--- xmlrpc-c-1.16.6.orig/src/xmlrpc_server_abyss.pc.in	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/xmlrpc_server_abyss.pc.in	2009-08-10 12:01:27.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=@bindir@
++prefix=@prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name:        xmlrpc_server_abyss
++Description: XMLRPC Server Abyss library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc_server xmlrpc_abyss xmlrpc xmlrpc_util
++Libs:                  -L${libdir} -lxmlrpc_server_abyss
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/xmlrpc_server_cgi.pc xmlrpc-c-1.16.6/src/xmlrpc_server_cgi.pc
+--- xmlrpc-c-1.16.6.orig/src/xmlrpc_server_cgi.pc	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/xmlrpc_server_cgi.pc	2009-08-10 13:19:55.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=${exec_prefix}/bin
++prefix=/usr
++libdir=${exec_prefix}/lib
++includedir=${prefix}/include
++
++Name:        xmlrpc_server_cgi
++Description: XMLRPC CGI-Server library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc_server xmlrpc xmlrpc_util
++Libs:                  -L${libdir} -lxmlrpc_server_cgi
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/xmlrpc_server_cgi.pc.in xmlrpc-c-1.16.6/src/xmlrpc_server_cgi.pc.in
+--- xmlrpc-c-1.16.6.orig/src/xmlrpc_server_cgi.pc.in	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/xmlrpc_server_cgi.pc.in	2009-08-10 12:01:55.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=@bindir@
++prefix=@prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name:        xmlrpc_server_cgi
++Description: XMLRPC CGI-Server library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc_server xmlrpc xmlrpc_util
++Libs:                  -L${libdir} -lxmlrpc_server_cgi
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/xmlrpc_server.pc xmlrpc-c-1.16.6/src/xmlrpc_server.pc
+--- xmlrpc-c-1.16.6.orig/src/xmlrpc_server.pc	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/xmlrpc_server.pc	2009-08-10 13:19:55.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=${exec_prefix}/bin
++prefix=/usr
++libdir=${exec_prefix}/lib
++includedir=${prefix}/include
++
++Name:        xmlrpc_server
++Description: XMLRPC Server library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc xmlrpc_util
++Libs:                  -L${libdir} -lxmlrpc_server
++Cflags:                        -I${includedir}
+diff -uN --recursive xmlrpc-c-1.16.6.orig/src/xmlrpc_server.pc.in xmlrpc-c-1.16.6/src/xmlrpc_server.pc.in
+--- xmlrpc-c-1.16.6.orig/src/xmlrpc_server.pc.in	1969-12-31 19:00:00.000000000 -0500
++++ xmlrpc-c-1.16.6/src/xmlrpc_server.pc.in	2009-08-10 12:00:59.000000000 -0400
+@@ -0,0 +1,12 @@
++bindir=@bindir@
++prefix=@prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name:        xmlrpc_server
++Description: XMLRPC Server library
++Version:     @XMLRPC_C_VERSION@
++
++Requires.private:      xmlrpc xmlrpc_util
++Libs:                  -L${libdir} -lxmlrpc_server
++Cflags:                        -I${includedir}
