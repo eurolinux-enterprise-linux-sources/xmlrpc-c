@@ -7,7 +7,7 @@
 Summary:	A lightweight RPC library based on XML and HTTP
 Name:		xmlrpc-c
 Version:	1.16.24
-Release:	1209.%svnrev%{?dist}
+Release:	1210.%svnrev%{?dist}
 # See COPYING for details.
 # The Python 1.5.2 license used by a few files is just BSD.
 License:	BSD and MIT
@@ -27,6 +27,7 @@ Patch107:	xmlrpc-c-uninit-curl.patch
 Patch108:	xmlrpc-c-verbose-curl.patch
 Patch109:	xmlrpc-c-gssapi-delegation.patch
 Patch111:	xmlrpc-c-1.16.24-xmlrpc-client-memleak.patch
+Patch112:	xmlrpc-c-rhbz-809819.patch
 
 BuildRoot:	%_tmppath/%name-%version-%release-root
 BuildRequires:	cmake
@@ -128,6 +129,7 @@ This package contains some handy XML-RPC demo applications.
 %patch108 -p1
 %patch109 -p1
 %patch111 -p1 -b .xmlrpc-client-memleak
+%patch112
 
 ## not needed...
 rm doc/{INSTALL,configure_doc}
@@ -231,6 +233,10 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Tue Jun 25 2013 Mikolaj Izdebski <mizdebsk@redhat.com> - 1.16.24-1210.1840
+- Print consistent feature list
+- Resolves: rhbz#809819
+
 * Wed Mar 07 2012 Vojtech Vitek (V-Teq) <vvitek@redhat.com> - 1.16.24-1209.1840
 - fixed various RpmDiff warning messages about missing sub-packages requires
 - added Requires libcurl to the client/apps packages (.so libraries needed)

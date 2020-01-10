@@ -1,0 +1,19 @@
+--- xmlrpc-c-config~	2013-06-25 15:42:29.587948061 +0200
++++ xmlrpc-c-config	2013-06-25 15:43:54.643835071 +0200
+@@ -22,6 +22,7 @@
+   abyss-server   ABYSS-based server functions
+   pstream-server pstream-based server functions
+   server-util    basic server functions (implied by *-server)
++  packetsocket   datagram socket API
+ 
+ Options are:
+   --version      The version number of the package
+@@ -77,7 +78,7 @@
+ 
+ case $1 in
+   (--features|--modules)
+-  echo "c++ abyss-server curl-client"
++  echo "abyss-server c++ c++2 cgi-server client packetsocket pstream-server server-util"
+   exit 0
+   ;;
+   (--version)
