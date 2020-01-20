@@ -6,7 +6,7 @@
 Summary:	A lightweight RPC library based on XML and HTTP
 Name:		xmlrpc-c
 Version:	1.32.5
-Release:	%release_func 1903.svn%svnrev
+Release:	%release_func 1905.svn%svnrev
 # See COPYING for details.
 # The Python 1.5.2 license used by a few files is just BSD.
 # GPL+: lib/util/getoptx.{c,h}
@@ -244,6 +244,12 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Tue Jan 28 2014 Daniel Mach <dmach@redhat.com> - 1.32.5-1905.svn2451
+- Mass rebuild 2014-01-24
+
+* Fri Dec 27 2013 Daniel Mach <dmach@redhat.com> - 1.32.5-1904.svn2451
+- Mass rebuild 2013-12-27
+
 * Wed Jul 31 2013 Michal Srb <msrb@redhat.com> - 1.32.5-1903.svn2451
 - Fix license tag
 
